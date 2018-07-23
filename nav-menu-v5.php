@@ -49,7 +49,6 @@ class ACF_Field_Nav_Menu_V5 extends acf_field {
 			'choices'      => array(
 				'object' => __( 'Nav Menu Object' ),
 				'menu'   => __( 'Nav Menu HTML' ),
-				'id'     => __( 'Nav Menu ID' ),
 			),
 		) );
 
@@ -156,20 +155,46 @@ class ACF_Field_Nav_Menu_V5 extends acf_field {
 
 		// check format
 		if ( 'object' == $field['save_format'] ) {
-			$wp_menu_object = wp_get_nav_menu_object( $value );
 
-			if( empty( $wp_menu_object ) ) {
-				return false;
-			}
+            $args = array(
+                'order'=>'ASC',
+                'orderby'=> 'menu_order',
+                'output' => object);
 
-			$menu_object = new stdClass;
+            $array_menu = wp_get_nav_menu_items($value);
+               $menu = array();
+               foreach ($array_menu as $m) {
+                   if (empty($m->menu_item_parent)) {
+                       $menu[] = array(
+                           'ID' => $m->ID,
+                           'title' => $m->title,
+                           'url' => $m->url,
+                           'childern' => array(),
+						);
+                   }
+               }
 
-			$menu_object->ID    = $wp_menu_object->term_id;
-			$menu_object->name  = $wp_menu_object->name;
-			$menu_object->slug  = $wp_menu_object->slug;
-			$menu_object->count = $wp_menu_object->count;
+               foreach ($array_menu as $sm) {
+                   if ($sm->menu_item_parent != 0) {
+                       foreach($menu as $index=>$value) {
+                           if ($sm->menu_item_parent == $value['ID']) {
+                               $submenu_array = array(
+                                   'ID' => $sm->ID,
+                                   'title' => $sm->title,
+                                   'url' => $sm->url,
+                             );
+                             array_push($menu[$index]['childern'], $submenu_array);
 
-			return $menu_object;
+                           }
+                       }
+
+                   }
+
+               }
+
+               return $menu;
+
+			// return $menu_object;
 		} elseif ( 'menu' == $field['save_format'] ) {
 			ob_start();
 
